@@ -21,6 +21,7 @@ export default defineContentScript({
     // later too
     // TODO: optimize on perf
     const observer = new MutationObserver(() => removeAIBlockBubbles());
-    observer.observe(document.body, { childList: true, subtree: true });
+    const target = document.querySelector('.kix-appview-editor-container') || document.body;
+    observer.observe(target, { childList: true, subtree: true });
   },
 });
