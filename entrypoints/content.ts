@@ -8,7 +8,9 @@ export default defineContentScript({
       '.docs-bubble-material.docs-bubble.docs-material.inlineFabBubbleContainer',
       '.docs-ai-text-generator-bubble-usecase-menu',
       '.docos-docoview-tesla-conflict docos-anchoreddocoview',
-      '.suggestionNudgeViewContainer'
+      '.suggestionNudgeViewContainer',
+      '.docs-sidekick-button-container',
+      '.appsElementsSidekickEntryPointRoot'
     ];
 
     const escSelectors = [
@@ -16,10 +18,14 @@ export default defineContentScript({
       '.docs-bubble-material.docs-bubble.docs-material.inlineFabBubbleContainer'
     ];
 
+    let escClickCount = 0;
     let pendingEscDispatch = false;
 
+    const escClickTrackers = new WeakMap<Element, number>();
+    const handledEscElements = new WeakSet<Element>();
+    const maxEscClicks = 5;
+
     const dispatchEscapeKeyIntoIframe = () => {
-      console.log('pressing esc')
       const iframe = document.querySelector<HTMLIFrameElement>('iframe.docs-texteventtarget-iframe');
       if (!iframe || !iframe.contentWindow || !iframe.contentDocument) return;
       // bypass hidden css on iframe for focus
@@ -39,22 +45,31 @@ export default defineContentScript({
       iframe.contentDocument.dispatchEvent(escEvent);
     };
 
-    const onRotatingTileClick = () => {
-      if (!pendingEscDispatch) return;
-      pendingEscDispatch = false;
+    const onRotatingTileClick = (sourceEl: Element) => () => {
+      const currentCount = escClickTrackers.get(sourceEl) || 0;
+      if (currentCount >= 5) return;
+
       dispatchEscapeKeyIntoIframe();
-      const tileManager = document.querySelector('.kix-rotatingtilemanager-content');
-      tileManager?.removeEventListener('click', onRotatingTileClick);
-      console.log('click accepted')
+      escClickTrackers.set(sourceEl, currentCount + 1);
+
+      if (currentCount + 1 >= 5) {
+        const tileManager = document.querySelector('.kix-rotatingtilemanager-content');
+        tileManager?.removeEventListener('click', onRotatingTileClick(sourceEl));
+      }
     };
 
     const removeAIBlockBubbles = () => {
       for (const selector of selectors) {
         document.querySelectorAll(selector).forEach(el => {
-          if (escSelectors.includes(selector)) {
-            pendingEscDispatch = true;
+          if (escSelectors.includes(selector) && !handledEscElements.has(el)) {
+            handledEscElements.add(el);
+            escClickTrackers.set(el, 0);
+
             const tileManager = document.querySelector('.kix-rotatingtilemanager-content');
-            tileManager?.addEventListener('click', onRotatingTileClick, { once: true });
+            if (tileManager) {
+              const handler = onRotatingTileClick(el);
+              tileManager.addEventListener('click', handler);
+            }
           }
           el.remove();
         });
