@@ -25,6 +25,6 @@ npm run build
 ```
 
 1. Open chrome://extensions
-2. Enable Developer Mode
+2. Enable Developer Mode (upper right corner)
 3. Click Load unpacked
 4. Select the google-docs-ai-gone/.output/chrome-mv3 directory
