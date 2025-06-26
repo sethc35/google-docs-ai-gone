@@ -18,12 +18,8 @@ export default defineContentScript({
       '.docs-bubble-material.docs-bubble.docs-material.inlineFabBubbleContainer'
     ];
 
-    let escClickCount = 0;
-    let pendingEscDispatch = false;
-
     const escClickTrackers = new WeakMap<Element, number>();
     const handledEscElements = new WeakSet<Element>();
-    const maxEscClicks = 5;
 
     const dispatchEscapeKeyIntoIframe = () => {
       const iframe = document.querySelector<HTMLIFrameElement>('iframe.docs-texteventtarget-iframe');
